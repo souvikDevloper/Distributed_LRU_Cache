@@ -1,0 +1,8 @@
+distributed_lru_cache/
+├── lru_cache.py           # Core LRUCache class with TTL
+├── node.py                # Doubly-linked list node definition
+├── consistent_hash.py     # ConsistentHashRing implementation
+├── shard_manager.py       # Routes requests to shards
+├── replication.py         # Handles replication & failover
+├── config.py              # Configuration (capacities, replication factor)
+└── main.py                # Example client usage & CLI
