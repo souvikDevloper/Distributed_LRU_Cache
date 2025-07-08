@@ -1,0 +1,2 @@
+mode,ops,threads,workload,read_ratio,p50_ms,p95_ms,p99_ms,throughput_ops_sec
+local,500000,64,uniform,0.9,0.001,1.985,2.89,1207.4

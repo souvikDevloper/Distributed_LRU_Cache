@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Scalable In‑Memory LRU Cache (O(1) Ops) with Sharding & Auto‑Failover
 
 Summary
@@ -158,4 +159,218 @@ Open a Pull Request
 
 License
 This project is licensed under the Apache 2.0 License. See the LICENSE file for details.
+=======
+Distributed LRU Cache
+
+A minimal sharded, replicated, time‑aware LRU key/value cache written 100 % in Python.
+
+Consistent‑hash sharding – even key distribution, graceful scale‑out
+
+Write replication – adjustable REPLICATION_FACTOR for durability
+
+Per‑item TTL – automatic expiry without background janitors
+
+Exact LRU eviction – O(1) get/put using a doubly‑linked list
+
+HTTP interface – zero‑config Flask shards; portable to any WSGI/ASGI server
+
+Batteries‑included benchmark – uniform & Zipf workloads, local or HTTP
+
+⚠️  The bundled Flask server is for development only. For production‑grade
+load, run the shards under Gunicorn/uvicorn – see Tuning.
+
+Architecture at a Glance
+
+┌──────────────┐        put(k,v)        ┌──────────┐
+│  Benchmark   │ ─────────────────────▶ │ Primary  │
+│   Client     │                       │  Shard 1 │
+└──────────────┘ ◀───────────────────── │  (cache) │
+    ▲    ▲         get(k) / 404        └──────────┘
+    │    │                                   ▲  ▲
+    │    └───────────────┐                   │  │
+    │                    │   Replication     │  │
+    │      ┌──────────┐  └───────────────────┘  │
+    │      │ Shard 2  │<─────────────────────────┘
+    │      └──────────┘
+    │
+  Consistent‑Hash Ring      (N nodes, R replicas)
+
+ShardManager chooses the primary node for a key via consistent hashing
+
+Replicator fans out writes to the next R‑1 nodes on the ring
+
+Reads always go to the primary (read‑replicas are an easy extension)
+
+Quick Start
+
+1. Create and activate a virtual‑env
+
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+2. Run the 3‑node demo cluster
+
+python main.py --demo
+
+You should see:
+
+GET foo: bar
+GET key0 (evicted): None
+GET temp (expired): None
+
+3. Spin up a single shard
+
+python main.py --port 5001 --capacity 100_000 --default-ttl 60
+
+The shard exposes:
+
+Method
+
+Endpoint
+
+Body
+
+Notes
+
+GET
+
+/cache/<key>
+
+–
+
+404 if not found
+
+POST
+
+/cache/<key>
+
+{"value": <str>, "ttl": 30}
+
+ttl optional (s)
+
+GET
+
+/health
+
+–
+
+liveness probe
+
+Benchmark
+
+Run locally (no HTTP):
+
+python benchmarks/benchmark.py --mode local --ops 100_000 --threads 32
+
+Run through the shards:
+
+python benchmarks/benchmark.py `
+  --mode http `
+  --endpoint-file endpoints.yaml `
+  --threads 64 `           # load generator concurrency
+  --ops 100_000 `          # total operations
+  --keys 10_000 `          # distinct key space
+  --read-ratio 0.9         # 90 % GET / 10 % PUT
+
+Sample numbers on a laptop (Windows 11, Ryzen 7‑5800H)
+
+ops
+
+threads
+
+p50 (ms)
+
+p95 (ms)
+
+p99 (ms)
+
+throughput (ops/s)
+
+50 k
+
+32
+
+2.2
+
+18.1
+
+21.0
+
+1.77 k
+
+100 k
+
+64
+
+37.7
+
+42.0
+
+47.8
+
+1.64 k
+
+Under the hood each logical write is replicated to 2 nodes, so the shard side handles ~3.2 k HTTP requests/s in the second run.
+
+Tuning for Higher QPS
+
+lever
+
+effect
+
+example
+
+Production server
+
+Faster accept + coroutine‑based IO
+
+gunicorn main:create_app -w 8 -k gevent --bind 0.0.0.0:5001
+
+More shard workers
+
+Parallelism within a node
+
+run 2–4 Gunicorn workers per port or multiple ports per shard
+
+Batch writes
+
+Slash HTTP overhead on replication
+
+add /bulk that accepts a dict of key→value
+
+Async client
+
+Drive more load without GIL contention
+
+replace benchmark threads with httpx.AsyncClient
+
+Larger TIME_WAIT reuse
+
+Windows: netsh int ipv4 set dynamicport tcp start=49152 num=16384
+
+frees more ephemeral ports
+
+Troubleshooting
+
+WinError 10048 / Only one usage of each socket address … – ran out of ephemeral ports. Use keep‑alive (requests.Session, already enabled), lower --threads, or shorten TIME_WAIT.
+
+High P99 latency – likely Python GC pauses or replication fan‑out. Try Gunicorn with gevent, which yields during IO.
+
+Hot spots – skewed workload? Switch benchmark to --workload zipf --skew 1.4.
+
+Contributing
+
+Fork ✨
+
+Create feature branch git checkout -b feat/my‑idea
+
+poetry run pytest – tests must pass
+
+Open a PR – we ❤️ discussions!
+
+License
+
+This project is released under the MIT License – see LICENSE for details.
+>>>>>>> 4b405a4 (updated distributed cache)
 

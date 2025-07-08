@@ -1,0 +1,10 @@
+autopep8>=2.0      # optional: formatting
+dataclasses-json>=0.6  # if used in the project
+Flask>=3.0
+requests>=2.32
+PyYAML>=6.0
+
+# Benchmark extras
+pandas>=2.0
+matplotlib>=3.8
+tqdm>=4.66
